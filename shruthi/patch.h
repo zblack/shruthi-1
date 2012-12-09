@@ -380,6 +380,10 @@ enum Operator {
   OP_PING_PONG_4,
   OP_PING_PONG_8,
   OP_PING_PONG_SEQ,
+  OP_FLA,
+  OP_FLR,
+  OP_REV,
+  OP_DWN,
   OP_LAST
 };
 

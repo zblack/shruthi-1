@@ -300,6 +300,10 @@ static const prog_char str_res_2steps[] PROGMEM = "2steps";
 static const prog_char str_res_4steps[] PROGMEM = "4steps";
 static const prog_char str_res_8steps[] PROGMEM = "8steps";
 static const prog_char str_res_seqmix[] PROGMEM = "seqmix";
+static const prog_char str_res_fla[] PROGMEM = "fla";
+static const prog_char str_res_flr[] PROGMEM = "flr";
+static const prog_char str_res_rev[] PROGMEM = "rev";
+static const prog_char str_res_dwn[] PROGMEM = "dwn";
 static const prog_char str_res_stp[] PROGMEM = "stp";
 static const prog_char str_res_arpSlt[] PROGMEM = "arp+lt";
 static const prog_char str_res_seqSlt[] PROGMEM = "seq+lt";
@@ -733,6 +737,10 @@ PROGMEM const prog_char* string_table[] = {
   str_res_4steps,
   str_res_8steps,
   str_res_seqmix,
+  str_res_fla,
+  str_res_flr,
+  str_res_rev,
+  str_res_dwn,
   str_res_stp,
   str_res_arp,
   str_res_arpSlt,

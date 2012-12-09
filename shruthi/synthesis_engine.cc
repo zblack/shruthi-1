@@ -66,6 +66,9 @@ uint8_t SynthesisEngine::dirty_;
 uint8_t SynthesisEngine::ignore_note_off_messages_;
 uint8_t SynthesisEngine::volume_;
 
+uint16_t k_user_wave_table=0;
+uint16_t k_dwn_sample=0;
+
 /* </static> */
 
 /* static */
@@ -1237,6 +1240,15 @@ inline void Voice::ProcessBlock() {
           }
         }
         break;
+      case OP_FLA:
+      case OP_FLR:
+      case OP_REV:
+      case OP_DWN:
+        for (uint8_t i = 0; i < kAudioBlockSize; ++i) {
+          buffer_[i] >>= 1;
+          buffer_[i] += (osc2_buffer_[i] >> 1);
+        }
+        break;
       default:
         for (uint8_t i = 0; i < kAudioBlockSize; ++i) {
           buffer_[i] = U8Mix(
@@ -1284,19 +1296,74 @@ inline void Voice::ProcessBlock() {
     }
   }
   
-  // Mix with noise and output.
-  uint8_t noise = Random::GetByte();
-  uint8_t noise_gain = S16ShiftRight8(dst_[MOD_DST_MIX_NOISE]);
-  if (enabled_source_bitmask != 0xff) {
-    noise_gain = (enabled_source_bitmask & 8) ? noise_gain : 0;
-    if (enabled_source_bitmask == 8) {
-      noise_gain <<= 1;
+  if (op >= OP_FLA && op <= OP_DWN) {
+    uint8_t *uwt = user_wavetable;
+    uint16_t delay;
+    // 0..255 -> 0..63
+    // 0 -> 39215hz, 1024 samples = 26.11 ms
+    // 63 -> 612hz, 1024 samples = 1671.19 ms
+    osc_2_gain >>= 2;
+
+    // 0..63
+    delay = S16ShiftRight8(dst_[MOD_DST_MIX_NOISE]);
+
+    // 0..31 -> 1..32
+    // 48..63 -> 0..1023 well, actually 1024 but it will be wrapped anyway
+    if (delay < 47)
+      delay = delay + 1;
+    else 
+      delay = (delay - 47) << 6;
+
+    for (uint8_t i = 0; i < kAudioBlockSize; ++i) {
+//      uint16_t z = ((int16_t)k_user_wave_table - (engine.patch_.mix_noise << 3)) & MASK;
+      uint16_t z = (k_user_wave_table - delay) & 0x3ff;
+      uint8_t f;
+  
+      // all the non linear I can do..
+      if (op == OP_REV) {
+        z = 0x3ff - z;
+      }
+
+      f = uwt[z];
+
+      if (op == OP_FLR) {
+        f = ~f;
+      }
+
+      uint8_t dry = buffer_[i]; 
+
+      buffer_[i] = U8Mix(
+        buffer_[i],
+        f,
+        36,
+        219
+      );
+
+      if (++k_dwn_sample > osc_2_gain) {
+        k_dwn_sample=0;
+        if (op == OP_DWN) 
+          uwt[k_user_wave_table]=dry;
+        else
+          uwt[k_user_wave_table]=buffer_[i];
+        ++k_user_wave_table &= 0x3ff;
+      }
+      audio_out.Overwrite(buffer_[i]);
     }
-  }
-  uint8_t mix_gain = ~noise_gain;
-  for (uint8_t i = 0; i < kAudioBlockSize; ++i) {
-    noise = (noise * 73) + 1;
-    audio_out.Overwrite(U8Mix(buffer_[i], noise, mix_gain, noise_gain));
+  } else {
+    // Mix with noise and output.
+    uint8_t noise = Random::GetByte();
+    uint8_t noise_gain = S16ShiftRight8(dst_[MOD_DST_MIX_NOISE]);
+    if (enabled_source_bitmask != 0xff) {
+      noise_gain = (enabled_source_bitmask & 8) ? noise_gain : 0;
+      if (enabled_source_bitmask == 8) {
+        noise_gain <<= 1;
+      }
+    }
+    uint8_t mix_gain = ~noise_gain;
+    for (uint8_t i = 0; i < kAudioBlockSize; ++i) {
+      noise = (noise * 73) + 1;
+      audio_out.Overwrite(U8Mix(buffer_[i], noise, mix_gain, noise_gain));
+    }
   }
 }
 

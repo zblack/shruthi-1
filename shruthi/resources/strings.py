@@ -327,6 +327,10 @@ duo
 4steps
 8steps
 seqmix
+fla
+flr
+rev
+dwn
 
 stp
 arp
