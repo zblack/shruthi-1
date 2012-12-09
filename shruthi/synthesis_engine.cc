@@ -1315,8 +1315,7 @@ inline void Voice::ProcessBlock() {
       delay = (delay - 47) << 6;
 
     for (uint8_t i = 0; i < kAudioBlockSize; ++i) {
-//      uint16_t z = ((int16_t)k_user_wave_table - (engine.patch_.mix_noise << 3)) & MASK;
-      uint16_t z = (k_user_wave_table - delay) & 0x3ff;
+      uint16_t z = ((int16_t)k_user_wave_table - delay) & 0x3ff;
       uint8_t f;
   
       // all the non linear I can do..
